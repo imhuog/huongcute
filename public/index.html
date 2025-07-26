@@ -1113,29 +1113,32 @@
                     this.showToast('Lỗi kết nối đến máy chủ. Đang thử lại...', 'error');
                 });
 
-                this.socket.on('roomCreated', (data) => {
-                    // Fix: Handle both string and object room ID
-                    this.roomId = typeof data === 'string' ? data : data.roomId || data;
-                    this.isOnlineMode = true;
-                    this.showScreen('room-lobby-screen');
-                    document.getElementById('display-room-id').textContent = this.roomId;
-                    document.getElementById('lobby-room-id').textContent = `(${this.roomId})`;
-                    const shareLink = `${window.location.origin}?room=${this.roomId}`;
-                    document.getElementById('share-link').textContent = shareLink;
-                    this.showToast(`Phòng ${this.roomId} đã được tạo!`, 'success');
-                });
+               this.socket.on('roomCreated', (data) => {
+    // Sửa lại để xử lý cả string và object
+    this.roomId = data.roomId || data;
+    this.isOnlineMode = true;
+    this.showScreen('room-lobby-screen');
+    document.getElementById('display-room-id').textContent = this.roomId;
+    document.getElementById('lobby-room-id').textContent = `(${this.roomId})`;
+    // Tạo link chia sẻ đúng format
+    const shareLink = `${window.location.origin}/?room=${this.roomId}`;
+    document.getElementById('share-link').textContent = shareLink;
+    this.showToast(`Phòng ${this.roomId} đã được tạo!`, 'success');
+});
 
-                this.socket.on('roomJoined', (roomInfo) => {
-                    this.roomId = roomInfo.roomId;
-                    this.isOnlineMode = true;
-                    this.playerColor = roomInfo.playerColor;
-                    this.showScreen('room-lobby-screen');
-                    document.getElementById('display-room-id').textContent = roomInfo.roomId;
-                    document.getElementById('lobby-room-id').textContent = `(${roomInfo.roomId})`;
-                    const shareLink = `${window.location.origin}?room=${roomInfo.roomId}`;
-                    document.getElementById('share-link').textContent = shareLink;
-                    this.showToast(`Đã vào phòng ${roomInfo.roomId} với vai trò ${roomInfo.playerColor === 'black' ? 'Đen' : 'Trắng'}`, 'success');
-                });
+             this.socket.on('roomJoined', (data) => {
+    if (data.success) {
+        this.roomId = data.gameState.roomId;
+        this.isOnlineMode = true;
+        this.showScreen('room-lobby-screen');
+        document.getElementById('display-room-id').textContent = this.roomId;
+        document.getElementById('lobby-room-id').textContent = `(${this.roomId})`;
+        const shareLink = `${window.location.origin}/?room=${this.roomId}`;
+        document.getElementById('share-link').textContent = shareLink;
+        this.updateLobbyUI(data.gameState);
+        this.showToast(`Đã vào phòng ${this.roomId}!`, 'success');
+    }
+});
 
                 this.socket.on('roomUpdate', (room) => {
                     const playersInLobby = document.getElementById('players-in-lobby');
@@ -1347,35 +1350,61 @@
             }
 
             // Game Logic
-            createRoom(mode) {
-                if (!this.playerName) {
-                    this.showToast('Vui lòng nhập tên của bạn.', 'error');
-                    return;
-                }
-                localStorage.setItem('playerName', this.playerName);
-                if (mode === 'online') {
-                    this.isOnlineMode = true;
-                    this.socket.emit('createRoom', this.playerName);
-                    this.showToast('Đang tạo phòng...', 'info');
-                }
-            }
+          createRoom(mode) {
+    if (!this.playerName) {
+        this.showToast('Vui lòng nhập tên của bạn.', 'error');
+        return;
+    }
+    localStorage.setItem('playerName', this.playerName);
+    if (mode === 'online') {
+        this.isOnlineMode = true;
+        // Sửa lại format gửi data
+        this.socket.emit('createRoom', { 
+            playerName: this.playerName,
+            roomName: null // Có thể thêm tính năng tùy chỉnh tên phòng sau
+        });
+        this.showToast('Đang tạo phòng...', 'info');
+    }
+}
 
-            joinRoom() {
-                if (!this.playerName) {
-                    this.showToast('Vui lòng nhập tên của bạn.', 'error');
-                    return;
-                }
-                const roomId = document.getElementById('room-id-input').value.trim();
-                if (!roomId) {
-                    this.showToast('Vui lòng nhập ID phòng.', 'error');
-                    return;
-                }
-                localStorage.setItem('playerName', this.playerName);
-                this.isOnlineMode = true;
-                this.socket.emit('joinRoom', roomId, this.playerName);
-                this.showToast('Đang vào phòng...', 'info');
-            }
+         joinRoom() {
+    if (!this.playerName) {
+        this.showToast('Vui lòng nhập tên của bạn.', 'error');
+        return;
+    }
+    const roomId = document.getElementById('room-id-input').value.trim();
+    if (!roomId) {
+        this.showToast('Vui lòng nhập ID phòng.', 'error');
+        return;
+    }
+    localStorage.setItem('playerName', this.playerName);
+    this.isOnlineMode = true;
+    // Sửa lại format gửi data
+    this.socket.emit('joinRoom', { 
+        roomId: roomId, 
+        playerName: this.playerName 
+    });
+    this.showToast('Đang vào phòng...', 'info');
+}
 
+            // Thêm hàm updateLobbyUI
+updateLobbyUI(gameState) {
+    const playersInLobby = document.getElementById('players-in-lobby');
+    const lobbyPlayerNames = document.getElementById('lobby-player-names');
+    const connectedPlayers = gameState.players.filter(p => p.connected);
+    
+    playersInLobby.textContent = `${connectedPlayers.length}/2`;
+    lobbyPlayerNames.innerHTML = connectedPlayers.map(p => 
+        `<span>${p.name} (${p.color === 1 ? 'Đen' : 'Trắng'}) ${p.connected ? '✅' : '❌'}</span>`
+    ).join('<br>');
+
+    const startGameButton = document.getElementById('start-game-button');
+    if (connectedPlayers.length === 2) {
+        startGameButton.disabled = false;
+    } else {
+        startGameButton.disabled = true;
+    }
+}
             startGame() {
                 if (this.isOnlineMode && this.socket) {
                     this.socket.emit('startGame', this.roomId);
@@ -2086,22 +2115,28 @@
         }
 
         // Initialize game when page loads
-        window.addEventListener('DOMContentLoaded', () => {
-            game = new EnhancedOthelloGame();
-            
-            // Check for room ID in URL - Fixed to handle URL parameters properly
-            const urlParams = new URLSearchParams(window.location.search);
-            const roomId = urlParams.get('room');
-            if (roomId) {
-                document.getElementById('room-id-input').value = roomId;
-                // Auto-fill player name if available and show join room screen
-                if (game.playerName) {
-                    document.getElementById('player-name').value = game.playerName;
-                }
-                game.showJoinRoom();
-                game.showToast(`Sẵn sàng tham gia phòng ${roomId}`, 'info');
-            }
-        });
+     window.addEventListener('DOMContentLoaded', () => {
+    game = new EnhancedOthelloGame();
+    
+    // Sửa lại phần xử lý URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('room');
+    if (roomId) {
+        // Tự động điền room ID
+        document.getElementById('room-id-input').value = roomId;
+        
+        // Kiểm tra xem có playerName không
+        const savedPlayerName = localStorage.getItem('playerName');
+        if (savedPlayerName) {
+            document.getElementById('player-name').value = savedPlayerName;
+            game.playerName = savedPlayerName;
+        }
+        
+        // Chuyển đến màn hình join room
+        game.showJoinRoom();
+        game.showToast(`Sẵn sàng tham gia phòng ${roomId}. Nhập tên và nhấn "Tham Gia"!`, 'info');
+    }
+});
 
         // Handle page visibility change
         document.addEventListener('visibilitychange', () => {
