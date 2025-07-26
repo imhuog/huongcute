@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: othello-multiplayer
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/rooms
+    envVars:
+      - key: NODE_ENV
+        value: production
