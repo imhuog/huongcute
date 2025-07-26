@@ -114,6 +114,86 @@
             color: var(--text-secondary);
         }
 
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            min-width: 300px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left-color: var(--success-color);
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 0, 0, 0.9));
+        }
+
+        .toast.error {
+            border-left-color: var(--error-color);
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(0, 0, 0, 0.9));
+        }
+
+        .toast.warning {
+            border-left-color: #ffa726;
+            background: linear-gradient(135deg, rgba(255, 167, 38, 0.15), rgba(0, 0, 0, 0.9));
+        }
+
+        .toast.info {
+            border-left-color: #42a5f5;
+            background: linear-gradient(135deg, rgba(66, 165, 245, 0.15), rgba(0, 0, 0, 0.9));
+        }
+
+        .toast-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .toast-close {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .toast-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
         /* Menu screens */
         .screen {
             display: none;
@@ -250,6 +330,11 @@
             max-width: 1200px;
         }
 
+        .top-section.local-mode {
+            flex-direction: column;
+            align-items: center;
+        }
+
         .players-section {
             display: flex;
             gap: 20px;
@@ -332,6 +417,13 @@
             height: 400px;
             display: flex;
             flex-direction: column;
+        }
+
+        .chat-section.bottom {
+            width: 100%;
+            max-width: 600px;
+            height: 200px;
+            margin-top: 20px;
         }
 
         .chat-header {
@@ -555,7 +647,7 @@
         .connection-status {
             position: fixed;
             top: 20px;
-            right: 20px;
+            left: 20px;
             padding: 10px 15px;
             border-radius: 20px;
             font-size: 0.9rem;
@@ -583,62 +675,6 @@
         @keyframes pulse {
             0%, 100% { opacity: 0.8; }
             50% { opacity: 1; }
-        }
-
-        /* Notifications */
-        .notification {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            z-index: 1000;
-            display: none;
-        }
-
-        .notification.show {
-            display: block;
-            animation: bounceIn 0.5s ease-out;
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: var(--bg-primary);
-            padding: 30px;
-            border-radius: 20px;
-            text-align: center;
-            max-width: 500px;
-            margin: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            color: var(--text-primary);
-        }
-
-        .modal h2 {
-            color: var(--accent-color);
-            margin-bottom: 20px;
-            font-size: 2rem;
-        }
-
-        .modal p {
-            line-height: 1.6;
-            margin-bottom: 15px;
         }
 
         .game-over {
@@ -754,6 +790,14 @@
                 width: 200px;
                 margin: 5px 0;
             }
+            .toast {
+                min-width: 250px;
+                font-size: 0.9rem;
+            }
+            .toast-container {
+                right: 10px;
+                top: 10px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -779,6 +823,9 @@
     <div class="connection-status" id="connection-status">
         🔄 Đang kết nối...
     </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
 
     <div class="screen active" id="main-menu">
         <div class="menu-card">
@@ -881,7 +928,7 @@
 
     <div class="screen" id="game-screen">
         <div class="game-container">
-            <div class="top-section">
+            <div class="top-section" id="top-section">
                 <div class="players-section">
                     <div class="player-card" id="player-black-card">
                         <span class="player-name" id="player-black-name"></span>
@@ -895,7 +942,7 @@
                     </div>
                 </div>
 
-                <div class="chat-section">
+                <div class="chat-section" id="chat-section">
                     <div class="tabs">
                         <button class="tab active" data-tab="chat-tab">💬 Chat</button>
                         <button class="tab" data-tab="leaderboard-tab" onclick="game.loadLeaderboardData()">🏆 BXH</button>
@@ -942,32 +989,24 @@
         </div>
     </div>
 
-    <div class="modal" id="rules-modal">
-        <div class="modal-content">
-            <h2>❓ Luật Chơi Cờ Lật (Othello/Reversi)</h2>
-            <p>
+    <div class="modal" id="rules-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: var(--bg-primary); padding: 30px; border-radius: 20px; text-align: center; max-width: 500px; margin: 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); color: var(--text-primary);">
+            <h2 style="color: var(--accent-color); margin-bottom: 20px; font-size: 2rem;">❓ Luật Chơi Cờ Lật (Othello/Reversi)</h2>
+            <p style="line-height: 1.6; margin-bottom: 15px;">
                 Mục tiêu của trò chơi là có nhiều quân cờ của bạn hơn đối thủ khi bàn cờ đầy hoặc không còn nước đi hợp lệ.
             </p>
-            <p>
+            <p style="line-height: 1.6; margin-bottom: 15px;">
                 Bạn và đối thủ sẽ thay phiên đặt quân cờ của mình (đen hoặc trắng) lên bàn cờ 8x8.
             </p>
-            <p>
+            <p style="line-height: 1.6; margin-bottom: 15px;">
                 Khi đặt một quân cờ, bạn phải kẹp ít nhất một quân cờ của đối thủ giữa quân cờ mới đặt và một quân cờ khác của bạn đã có sẵn trên bàn cờ, theo chiều ngang, dọc hoặc chéo.
             </p>
-            <p>
+            <p style="line-height: 1.6; margin-bottom: 15px;">
                 Tất cả các quân cờ bị kẹp của đối thủ sẽ bị lật sang màu của bạn.
             </p>
-            <p>
+            <p style="line-height: 1.6; margin-bottom: 15px;">
                 Nếu bạn không có nước đi hợp lệ, lượt sẽ tự động chuyển sang đối thủ. Trò chơi kết thúc khi không bên nào có nước đi hợp lệ hoặc khi bàn cờ đầy.
             </p>
-            <button class="btn btn-primary" onclick="closeModal()">Đóng</button>
-        </div>
-    </div>
-
-    <div class="modal" id="notification-modal">
-        <div class="modal-content">
-            <h2 id="notification-title"></h2>
-            <p id="notification-message"></p>
             <button class="btn btn-primary" onclick="closeModal()">Đóng</button>
         </div>
     </div>
@@ -1000,6 +1039,8 @@
                 this.emojis = ['😊', '😂', '😍', '😡', '😭', '👍', '👎', '🎉'];
                 this.selectedEmoji = '';
                 this.aiDifficulty = 'medium';
+                this.playerBlackEmoji = '⚫';
+                this.playerWhiteEmoji = '⚪';
 
                 // Initialize connection on game start
                 this.initializeConnection();
@@ -1008,6 +1049,38 @@
                 this.loadPlayerName();
                 this.loadTheme();
                 this.updateConnectionStatus(false); // Initial status
+            }
+
+            showToast(message, type = 'info', duration = 4000) {
+                const toastContainer = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                
+                const icons = {
+                    success: '✅',
+                    error: '❌',
+                    warning: '⚠️',
+                    info: 'ℹ️'
+                };
+                
+                toast.innerHTML = `
+                    <span class="toast-icon">${icons[type] || icons.info}</span>
+                    <span>${message}</span>
+                    <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+                `;
+                
+                toastContainer.appendChild(toast);
+                
+                // Show toast with animation
+                setTimeout(() => toast.classList.add('show'), 10);
+                
+                // Auto remove after duration
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.classList.remove('show');
+                        setTimeout(() => toast.remove(), 300);
+                    }
+                }, duration);
             }
 
             initializeConnection() {
@@ -1028,27 +1101,28 @@
                     console.log('Disconnected from Socket.IO server:', reason);
                     this.updateConnectionStatus(false);
                     if (reason === 'io server disconnect') {
-                        this.showNotification('Mất kết nối với máy chủ. Vui lòng thử lại sau.', 'error');
+                        this.showToast('Mất kết nối với máy chủ. Vui lòng thử lại sau.', 'error');
                     } else {
-                        this.showNotification('Mất kết nối. Đang thử kết nối lại...', 'warning');
+                        this.showToast('Mất kết nối. Đang thử kết nối lại...', 'warning');
                     }
                 });
 
                 this.socket.on('connect_error', (error) => {
                     console.error('Socket.IO connection error:', error);
                     this.updateConnectionStatus(false);
-                    this.showNotification('Lỗi kết nối đến máy chủ. Đang thử lại...', 'error');
+                    this.showToast('Lỗi kết nối đến máy chủ. Đang thử lại...', 'error');
                 });
 
-                this.socket.on('roomCreated', (roomId) => {
-                    this.roomId = roomId;
+                this.socket.on('roomCreated', (data) => {
+                    // Fix: Handle both string and object room ID
+                    this.roomId = typeof data === 'string' ? data : data.roomId || data;
                     this.isOnlineMode = true;
                     this.showScreen('room-lobby-screen');
-                    document.getElementById('display-room-id').textContent = roomId;
-                    document.getElementById('lobby-room-id').textContent = `(${roomId})`;
-                    const shareLink = `${window.location.origin}?room=${roomId}`;
+                    document.getElementById('display-room-id').textContent = this.roomId;
+                    document.getElementById('lobby-room-id').textContent = `(${this.roomId})`;
+                    const shareLink = `${window.location.origin}?room=${this.roomId}`;
                     document.getElementById('share-link').textContent = shareLink;
-                    this.showNotification(`Phòng ${roomId} đã được tạo!`, 'success');
+                    this.showToast(`Phòng ${this.roomId} đã được tạo!`, 'success');
                 });
 
                 this.socket.on('roomJoined', (roomInfo) => {
@@ -1060,7 +1134,7 @@
                     document.getElementById('lobby-room-id').textContent = `(${roomInfo.roomId})`;
                     const shareLink = `${window.location.origin}?room=${roomInfo.roomId}`;
                     document.getElementById('share-link').textContent = shareLink;
-                    this.showNotification(`Đã vào phòng ${roomInfo.roomId} với vai trò ${roomInfo.playerColor === 'black' ? 'Đen' : 'Trắng'}`, 'success');
+                    this.showToast(`Đã vào phòng ${roomInfo.roomId} với vai trò ${roomInfo.playerColor === 'black' ? 'Đen' : 'Trắng'}`, 'success');
                 });
 
                 this.socket.on('roomUpdate', (room) => {
@@ -1082,14 +1156,14 @@
                     this.turn = initialState.turn;
                     this.playerBlackName = initialState.playerNames.black;
                     this.playerWhiteName = initialState.playerNames.white;
-                    this.playerBlackEmoji = initialState.playerEmojis.black;
-                    this.playerWhiteEmoji = initialState.playerEmojis.white;
+                    this.playerBlackEmoji = initialState.playerEmojis.black || '⚫';
+                    this.playerWhiteEmoji = initialState.playerEmojis.white || '⚪';
                     this.gameActive = true;
                     this.showScreen('game-screen');
                     this.updateBoard(initialState.board, initialState.validMoves, initialState.scores);
                     this.updateTurnIndicator(initialState.turn);
                     this.updatePlayerCards();
-                    this.showNotification('Game đã bắt đầu!', 'info');
+                    this.showToast('Game đã bắt đầu!', 'info');
                 });
 
                 this.socket.on('gameStateUpdate', (state) => {
@@ -1107,38 +1181,25 @@
                     const finalScore = document.getElementById('final-score');
                     if (result.winner) {
                         winnerAnnouncement.textContent = `${result.winner === 'black' ? this.playerBlackName : this.playerWhiteName} thắng! 🎉`;
-                        winnerAnnouncement.style.color = result.winner === 'black' ? 'black' : 'white';
-                        winnerAnnouncement.style.textShadow = result.winner === 'black' ? '2px 2px 4px rgba(255,255,255,0.5)' : '2px 2px 4px rgba(0,0,0,0.5)';
-                        winnerAnnouncement.style.background = 'unset'; // Reset gradient if any
-                        winnerAnnouncement.style.webkitTextFillColor = 'unset';
-                        winnerAnnouncement.style.webkitBackgroundClip = 'unset';
-                        winnerAnnouncement.style.backgroundClip = 'unset';
-
                     } else {
                         winnerAnnouncement.textContent = 'Hòa! 🤝';
-                        winnerAnnouncement.style.color = 'gray';
-                        winnerAnnouncement.style.textShadow = 'none';
-                        winnerAnnouncement.style.background = 'unset';
-                        winnerAnnouncement.style.webkitTextFillColor = 'unset';
-                        winnerAnnouncement.style.webkitBackgroundClip = 'unset';
-                        winnerAnnouncement.style.backgroundClip = 'unset';
                     }
                     finalScore.textContent = `Tỷ số: Đen ${result.scores.black} - Trắng ${result.scores.white}`;
                     this.showGameOverScreen();
                 });
 
                 this.socket.on('roomDoesNotExist', () => {
-                    this.showNotification('Phòng không tồn tại.', 'error');
+                    this.showToast('Phòng không tồn tại.', 'error');
                     this.backToMenu();
                 });
 
                 this.socket.on('roomFull', () => {
-                    this.showNotification('Phòng đã đầy.', 'error');
+                    this.showToast('Phòng đã đầy.', 'error');
                     this.backToMenu();
                 });
 
                 this.socket.on('playerLeftRoom', (message) => {
-                    this.showNotification(message, 'info');
+                    this.showToast(message, 'info');
                     if (this.isOnlineMode) { // Only go back to menu if in online mode and someone left
                         this.backToMenu();
                     }
@@ -1189,6 +1250,14 @@
                         this.setTheme(theme);
                     });
                 });
+
+                // Add tab switching functionality
+                document.addEventListener('click', (event) => {
+                    if (event.target.classList.contains('tab')) {
+                        const tabName = event.target.dataset.tab;
+                        this.switchTab(tabName);
+                    }
+                });
             }
 
             showScreen(screenId) {
@@ -1196,6 +1265,28 @@
                     screen.classList.remove('active');
                 });
                 document.getElementById(screenId).classList.add('active');
+                
+                // Adjust layout for local/AI games
+                if (screenId === 'game-screen') {
+                    const topSection = document.getElementById('top-section');
+                    const chatSection = document.getElementById('chat-section');
+                    
+                    if (!this.isOnlineMode) {
+                        // For local/AI games, move chat to bottom
+                        topSection.classList.add('local-mode');
+                        chatSection.classList.add('bottom');
+                        // Move chat section after the board
+                        const gameContainer = document.querySelector('.game-container');
+                        const boardContainer = document.querySelector('.board-container');
+                        gameContainer.insertBefore(chatSection, boardContainer.nextSibling);
+                    } else {
+                        // For online games, keep chat in sidebar
+                        topSection.classList.remove('local-mode');
+                        chatSection.classList.remove('bottom');
+                        // Move chat section back to top section
+                        topSection.appendChild(chatSection);
+                    }
+                }
             }
 
             renderMainMenu() {
@@ -1239,25 +1330,6 @@
                 }
             }
 
-            showNotification(message, type = 'info', duration = 3000) {
-                const notificationModal = document.getElementById('notification-modal');
-                const notificationTitle = document.getElementById('notification-title');
-                const notificationMessage = document.getElementById('notification-message');
-
-                notificationTitle.textContent = type === 'success' ? 'Thành công!' :
-                                              type === 'error' ? 'Lỗi!' :
-                                              type === 'warning' ? 'Cảnh báo!' : 'Thông báo!';
-                notificationMessage.textContent = message;
-                
-                // Set modal background/text color based on type, if needed
-                // notificationModal.style.backgroundColor = type === 'success' ? 'green' : ...
-
-                notificationModal.style.display = 'flex';
-                setTimeout(() => {
-                    notificationModal.style.display = 'none';
-                }, duration);
-            }
-
             showGameOverScreen() {
                 document.getElementById('game-over-screen').style.display = 'flex';
             }
@@ -1277,31 +1349,31 @@
             // Game Logic
             createRoom(mode) {
                 if (!this.playerName) {
-                    this.showNotification('Vui lòng nhập tên của bạn.', 'error');
+                    this.showToast('Vui lòng nhập tên của bạn.', 'error');
                     return;
                 }
                 localStorage.setItem('playerName', this.playerName);
                 if (mode === 'online') {
                     this.isOnlineMode = true;
                     this.socket.emit('createRoom', this.playerName);
-                    this.showNotification('Đang tạo phòng...', 'info');
+                    this.showToast('Đang tạo phòng...', 'info');
                 }
             }
 
             joinRoom() {
                 if (!this.playerName) {
-                    this.showNotification('Vui lòng nhập tên của bạn.', 'error');
+                    this.showToast('Vui lòng nhập tên của bạn.', 'error');
                     return;
                 }
-                const roomId = document.getElementById('room-id-input').value;
+                const roomId = document.getElementById('room-id-input').value.trim();
                 if (!roomId) {
-                    this.showNotification('Vui lòng nhập ID phòng.', 'error');
+                    this.showToast('Vui lòng nhập ID phòng.', 'error');
                     return;
                 }
                 localStorage.setItem('playerName', this.playerName);
                 this.isOnlineMode = true;
                 this.socket.emit('joinRoom', roomId, this.playerName);
-                this.showNotification('Đang vào phòng...', 'info');
+                this.showToast('Đang vào phòng...', 'info');
             }
 
             startGame() {
@@ -1340,8 +1412,8 @@
                 this.gameActive = false;
                 this.playerBlackName = 'Người chơi Đen';
                 this.playerWhiteName = 'Người chơi Trắng';
-                this.playerBlackEmoji = '';
-                this.playerWhiteEmoji = '';
+                this.playerBlackEmoji = '⚫';
+                this.playerWhiteEmoji = '⚪';
                 document.getElementById('score-black').textContent = '2';
                 document.getElementById('score-white').textContent = '2';
                 document.getElementById('chat-messages').innerHTML = '';
@@ -1353,7 +1425,7 @@
             resetGame() {
                 if (this.isOnlineMode && this.socket && this.roomId) {
                     this.socket.emit('requestReset', this.roomId);
-                    this.showNotification('Yêu cầu chơi lại đã được gửi!', 'info');
+                    this.showToast('Yêu cầu chơi lại đã được gửi!', 'info');
                 } else if (!this.isOnlineMode) {
                     this.startLocalGame();
                 }
@@ -1371,12 +1443,12 @@
                 this.updateTurnIndicator(this.turn);
                 this.updatePlayerCards();
                 this.showScreen('game-screen');
-                this.showNotification('Đã bắt đầu chơi cục bộ!', 'info');
+                this.showToast('Đã bắt đầu chơi cục bộ!', 'info');
             }
 
             createAIRoom() {
                 if (!this.playerName) {
-                    this.showNotification('Vui lòng nhập tên của bạn.', 'error');
+                    this.showToast('Vui lòng nhập tên của bạn.', 'error');
                     return;
                 }
                 this.aiDifficulty = document.getElementById('ai-difficulty').value;
@@ -1391,18 +1463,18 @@
                 this.updatePlayerCards();
                 document.getElementById('player-white-card').classList.add('ai'); // Mark AI player
                 this.showScreen('game-screen');
-                this.showNotification('Bắt đầu chơi với AI!', 'info');
+                this.showToast('Bắt đầu chơi với AI!', 'info');
             }
 
             playOffline() {
                 if (!this.playerName) {
-                    this.showNotification('Vui lòng nhập tên của bạn.', 'error');
+                    this.showToast('Vui lòng nhập tên của bạn.', 'error');
                     return;
                 }
                 this.startLocalGame();
             }
 
-            // Board and Game State Management (mostly unchanged from original logic)
+            // Board and Game State Management
             initBoard() {
                 this.board = Array(8).fill(null).map(() => Array(8).fill(null));
                 this.board[3][3] = 'white';
@@ -1430,9 +1502,9 @@
                         const piece = document.createElement('span');
                         piece.className = 'piece';
                         if (this.board[r][c] === 'black') {
-                            piece.textContent = '⚫';
+                            piece.textContent = this.playerBlackEmoji;
                         } else if (this.board[r][c] === 'white') {
-                            piece.textContent = '⚪';
+                            piece.textContent = this.playerWhiteEmoji;
                         }
                         cell.appendChild(piece);
                         gameBoard.appendChild(cell);
@@ -1445,7 +1517,8 @@
             updateTurnIndicator(turn) {
                 const indicator = document.getElementById('turn-indicator');
                 const currentPlayerName = turn === 'black' ? this.playerBlackName : this.playerWhiteName;
-                indicator.textContent = `Lượt của: ${currentPlayerName} (${turn === 'black' ? '⚫' : '⚪'})`;
+                const currentEmoji = turn === 'black' ? this.playerBlackEmoji : this.playerWhiteEmoji;
+                indicator.textContent = `Lượt của: ${currentPlayerName} (${currentEmoji})`;
 
                 const blackCard = document.getElementById('player-black-card');
                 const whiteCard = document.getElementById('player-white-card');
@@ -1482,6 +1555,8 @@
                     this.playerWhiteEmoji = emoji;
                 }
                 this.renderEmojiSelectors();
+                // Update board to reflect new emoji
+                this.updateBoard(this.board, this.validMoves, this.getScores(this.board));
             }
 
             renderEmojiSelectors() {
@@ -1490,9 +1565,11 @@
                 emojiSelectorBlack.innerHTML = '';
                 emojiSelectorWhite.innerHTML = '';
 
+                const pieceOptions = ['⚫', '🔴', '🟤', '🟫', '⭕', '🔵', '🟣', '🟢'];
+
                 if (this.isOnlineMode) {
                     if (this.playerColor === 'black') {
-                        this.emojis.forEach(emoji => {
+                        pieceOptions.forEach(emoji => {
                             const span = document.createElement('span');
                             span.className = `emoji-option ${this.playerBlackEmoji === emoji ? 'selected' : ''}`;
                             span.textContent = emoji;
@@ -1507,7 +1584,7 @@
                             emojiSelectorWhite.appendChild(opponentEmojiSpan);
                         }
                     } else if (this.playerColor === 'white') {
-                        this.emojis.forEach(emoji => {
+                        pieceOptions.forEach(emoji => {
                             const span = document.createElement('span');
                             span.className = `emoji-option ${this.playerWhiteEmoji === emoji ? 'selected' : ''}`;
                             span.textContent = emoji;
@@ -1523,18 +1600,19 @@
                         }
                     }
                 } else { // Local & AI mode: only render for player black
-                    this.emojis.forEach(emoji => {
+                    pieceOptions.forEach(emoji => {
                         const span = document.createElement('span');
                         span.className = `emoji-option ${this.playerBlackEmoji === emoji ? 'selected' : ''}`;
                         span.textContent = emoji;
                         span.onclick = () => this.selectEmoji(emoji);
                         emojiSelectorBlack.appendChild(span);
                     });
-                    if (this.playerWhiteEmoji) { // For AI, if AI has emoji
-                        const aiEmojiSpan = document.createElement('span');
-                        aiEmojiSpan.className = 'emoji-option selected';
-                        aiEmojiSpan.textContent = this.playerWhiteEmoji;
-                        emojiSelectorWhite.appendChild(aiEmojiSpan);
+                    // For AI or local white player
+                    if (this.playerWhiteEmoji) {
+                        const whiteEmojiSpan = document.createElement('span');
+                        whiteEmojiSpan.className = 'emoji-option selected';
+                        whiteEmojiSpan.textContent = this.playerWhiteEmoji;
+                        emojiSelectorWhite.appendChild(whiteEmojiSpan);
                     }
                 }
             }
@@ -1544,11 +1622,13 @@
                 if (this.isOnlineMode && this.socket) {
                     this.socket.emit('playerEmoji', { roomId: this.roomId, emoji: emoji });
                 } else { // Local and AI mode
-                    if (this.playerColor === 'black') {
+                    if (this.playerColor === 'black' || !this.isOnlineMode) {
                         this.playerBlackEmoji = emoji;
+                        this.renderEmojiSelectors();
+                        // Update board to show new pieces
+                        this.updateBoard(this.board, this.validMoves, this.getScores(this.board));
                     }
                 }
-                this.renderEmojiSelectors();
             }
 
             getScores(board) {
@@ -1642,7 +1722,7 @@
                     if (this.validMoves.some(move => move.row === row && move.col === col)) {
                         this.socket.emit('makeMove', { roomId: this.roomId, row, col });
                     } else {
-                        this.showNotification('Nước đi không hợp lệ!', 'warning');
+                        this.showToast('Nước đi không hợp lệ!', 'warning');
                     }
                 }
             }
@@ -1670,11 +1750,11 @@
                                 this.turn = 'black'; // AI no moves, player takes turn again
                                 this.updateTurnIndicator(this.turn);
                                 this.updateBoard(this.board, playerMovesAfterAI, scores);
-                                this.showNotification('AI không có nước đi, lượt của bạn!', 'info');
+                                this.showToast('AI không có nước đi, lượt của bạn!', 'info');
                             }
                         }
                     } else {
-                        this.showNotification('Nước đi không hợp lệ!', 'warning');
+                        this.showToast('Nước đi không hợp lệ!', 'warning');
                     }
                 }
             }
@@ -1711,7 +1791,7 @@
                                 this.turn = 'white'; // Player no moves, AI takes turn again
                                 this.updateTurnIndicator(this.turn);
                                 this.updateBoard(this.board, [], scores); // Clear valid moves for player
-                                this.showNotification('Bạn không có nước đi, lượt của AI!', 'info');
+                                this.showToast('Bạn không có nước đi, lượt của AI!', 'info');
                                 this.showAIThinkingIndicator(true);
                                 setTimeout(() => {
                                     this.makeAIMove(); // AI makes another move
@@ -1799,28 +1879,10 @@
 
                 if (scores.black > scores.white) {
                     winnerAnnouncement.textContent = `${this.playerBlackName} thắng! 🎉`;
-                    winnerAnnouncement.style.color = 'black';
-                    winnerAnnouncement.style.textShadow = '2px 2px 4px rgba(255,255,255,0.5)';
-                    winnerAnnouncement.style.background = 'unset';
-                    winnerAnnouncement.style.webkitTextFillColor = 'unset';
-                    winnerAnnouncement.style.webkitBackgroundClip = 'unset';
-                    winnerAnnouncement.style.backgroundClip = 'unset';
                 } else if (scores.white > scores.black) {
                     winnerAnnouncement.textContent = `${this.playerWhiteName} thắng! 🎉`;
-                    winnerAnnouncement.style.color = 'white';
-                    winnerAnnouncement.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
-                    winnerAnnouncement.style.background = 'unset';
-                    winnerAnnouncement.style.webkitTextFillColor = 'unset';
-                    winnerAnnouncement.style.webkitBackgroundClip = 'unset';
-                    winnerAnnouncement.style.backgroundClip = 'unset';
                 } else {
                     winnerAnnouncement.textContent = 'Hòa! 🤝';
-                    winnerAnnouncement.style.color = 'gray';
-                    winnerAnnouncement.style.textShadow = 'none';
-                    winnerAnnouncement.style.background = 'unset';
-                    winnerAnnouncement.style.webkitTextFillColor = 'unset';
-                    winnerAnnouncement.style.webkitBackgroundClip = 'unset';
-                    winnerAnnouncement.style.backgroundClip = 'unset';
                 }
                 finalScore.textContent = `Tỷ số: Đen ${scores.black} - Trắng ${scores.white}`;
                 this.showGameOverScreen();
@@ -1840,10 +1902,10 @@
             copyShareLink() {
                 const shareLink = document.getElementById('share-link').textContent;
                 navigator.clipboard.writeText(shareLink).then(() => {
-                    this.showNotification('Đã sao chép link chia sẻ!', 'success');
+                    this.showToast('Đã sao chép link chia sẻ!', 'success');
                 }).catch(err => {
                     console.error('Không thể sao chép link: ', err);
-                    this.showNotification('Không thể sao chép link.', 'error');
+                    this.showToast('Không thể sao chép link.', 'error');
                 });
             }
 
@@ -1853,7 +1915,6 @@
 
             closeModal() {
                 document.getElementById('rules-modal').style.display = 'none';
-                document.getElementById('notification-modal').style.display = 'none';
             }
 
             sendChatMessage() {
@@ -1899,7 +1960,7 @@
                     });
                 } catch (error) {
                     console.error('Lỗi khi tải bảng xếp hạng:', error);
-                    this.showNotification('Không thể tải bảng xếp hạng.', 'error');
+                    this.showToast('Không thể tải bảng xếp hạng.', 'error');
                 }
             }
 
@@ -1929,7 +1990,7 @@
                 } catch (error) {
                     console.error('Lỗi khi tải thống kê:', error);
                     statsList.innerHTML = '<p>Không thể tải thống kê người chơi.</p>';
-                    this.showNotification('Không thể tải thống kê người chơi.', 'error');
+                    this.showToast('Không thể tải thống kê người chơi.', 'error');
                 }
             }
 
@@ -1943,6 +2004,14 @@
 
                 document.getElementById(`${tabName}-content`).classList.add('active');
                 document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+            }
+
+            showLeaderboard() {
+                this.showToast('Tính năng bảng xếp hạng chỉ có trong chế độ online', 'info');
+            }
+
+            showStats() {
+                this.showToast('Tính năng thống kê chỉ có trong chế độ online', 'info');
             }
         }
 
@@ -2008,20 +2077,29 @@
             game.sendChatMessage();
         }
 
-        function switchTab(tabName) {
-            game.switchTab(tabName);
+        function showLeaderboard() {
+            game.showLeaderboard();
+        }
+
+        function showStats() {
+            game.showStats();
         }
 
         // Initialize game when page loads
         window.addEventListener('DOMContentLoaded', () => {
             game = new EnhancedOthelloGame();
             
-            // Check for room ID in URL
+            // Check for room ID in URL - Fixed to handle URL parameters properly
             const urlParams = new URLSearchParams(window.location.search);
             const roomId = urlParams.get('room');
             if (roomId) {
                 document.getElementById('room-id-input').value = roomId;
+                // Auto-fill player name if available and show join room screen
+                if (game.playerName) {
+                    document.getElementById('player-name').value = game.playerName;
+                }
                 game.showJoinRoom();
+                game.showToast(`Sẵn sàng tham gia phòng ${roomId}`, 'info');
             }
         });
 
@@ -2041,3 +2119,4 @@
     </script>
 </body>
 </html>
+                
