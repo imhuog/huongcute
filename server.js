@@ -192,6 +192,16 @@ class GameRoom {
         this.initializeBoard();
     }
 
+    // Method to initialize the board with starting Othello pieces
+    initializeBoard() {
+        this.board = Array(8).fill(0).map(() => Array(8).fill(0));
+        this.board[3][3] = 2; // White
+        this.board[3][4] = 1; // Black
+        this.board[4][3] = 1; // Black
+        this.board[4][4] = 2; // White
+        this.updateScores();
+    }
+
     addPlayer(socketId, playerName) {
         if (this.players.length < 2) {
             // Kiểm tra reconnecting player
@@ -219,8 +229,6 @@ class GameRoom {
     }
 
     // Các method khác giữ nguyên...
-}
-
     removePlayer(socketId) {
         const playerIndex = this.players.findIndex(p => p.id === socketId);
         if (playerIndex !== -1) {
@@ -530,6 +538,8 @@ socket.on('createRoom', (data) => {
             type: 'error'
         });
     }
+}); // <-- Dấu đóng ngoặc cho socket.on('createRoom')
+
 // Sửa lại event handler joinRoom
 socket.on('joinRoom', (data) => {
     try {
