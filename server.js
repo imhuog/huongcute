@@ -607,7 +607,7 @@ setInterval(() => {
 }, 5 * 60 * 1000); // Chạy kiểm tra mỗi 5 phút
 
 // Start the server
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     initializeDataDirectory(); // Đảm bảo thư mục dữ liệu được khởi tạo khi máy chủ khởi động
