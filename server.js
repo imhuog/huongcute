@@ -588,7 +588,11 @@ io.on('connection', (socket) => {
                 return;
             }
 
-            const room = rooms.get(roomId.trim().toUpperCase());
+            // Normalize room ID
+            const normalizedRoomId = roomId.trim().toUpperCase();
+            const room = rooms.get(normalizedRoomId);
+            
+            console.log(`Attempting to join room: ${normalizedRoomId}, exists: ${!!room}`);
             
             if (!room) {
                 socket.emit('roomError', {
@@ -610,21 +614,29 @@ io.on('connection', (socket) => {
 
             // Kiểm tra xem socket đã trong phòng nào khác chưa
             const existingPlayerInfo = players.get(socket.id);
-            if (existingPlayerInfo && existingPlayerInfo.roomId !== roomId) {
-                socket.emit('roomError', {
-                    success: false,
-                    message: 'Bạn đang ở trong phòng khác. Vui lòng rời phòng hiện tại trước.',
-                    type: 'warning'
-                });
-                return;
+            if (existingPlayerInfo && existingPlayerInfo.roomId !== normalizedRoomId) {
+                // Auto leave current room trước
+                const oldRoom = rooms.get(existingPlayerInfo.roomId);
+                if (oldRoom) {
+                    oldRoom.removePlayer(socket.id);
+                    socket.leave(existingPlayerInfo.roomId);
+                    oldRoom.addSystemMessage(`${existingPlayerInfo.playerName} đã rời khỏi phòng`);
+                    io.to(existingPlayerInfo.roomId).emit('playerLeft', {
+                        players: oldRoom.getGameState().players,
+                        spectators: oldRoom.getGameState().spectators,
+                        chatMessages: oldRoom.getGameState().chatMessages
+                    });
+                }
+                players.delete(socket.id);
             }
 
-            // Kiểm tra xem player đã trong phòng này chưa
+            // Kiểm tra xem player đã trong phòng này chưa (bằng socket ID)
             if (room.players.some(p => p.id === socket.id)) {
-                socket.emit('roomError', {
-                    success: false,
-                    message: 'Bạn đã ở trong phòng này rồi.',
-                    type: 'warning'
+                socket.emit('roomJoined', {
+                    success: true,
+                    gameState: room.getGameState(),
+                    playerColor: room.players.find(p => p.id === socket.id)?.color,
+                    message: 'Bạn đã ở trong phòng này rồi.'
                 });
                 return;
             }
@@ -642,10 +654,10 @@ io.on('connection', (socket) => {
             const joinResult = room.addPlayer(socket.id, finalPlayerName.trim());
             
             if (joinResult.success) {
-                players.set(socket.id, { roomId, playerName: finalPlayerName.trim(), isHost: false });
-                socket.join(roomId);
+                players.set(socket.id, { roomId: normalizedRoomId, playerName: finalPlayerName.trim(), isHost: false });
+                socket.join(normalizedRoomId);
                 
-                console.log(`Player ${finalPlayerName} ${joinResult.reconnected ? 'reconnected to' : 'joined'} room: ${roomId}`);
+                console.log(`Player ${finalPlayerName} ${joinResult.reconnected ? 'reconnected to' : 'joined'} room: ${normalizedRoomId}`);
 
                 // Thêm system message
                 if (!joinResult.reconnected) {
@@ -655,7 +667,7 @@ io.on('connection', (socket) => {
                 }
 
                 // Gửi thông báo cho tất cả players trong phòng
-                io.to(roomId).emit('playerJoined', {
+                io.to(normalizedRoomId).emit('playerJoined', {
                     success: true,
                     gameState: room.getGameState()
                 });
@@ -676,7 +688,7 @@ io.on('connection', (socket) => {
                     setTimeout(() => {
                         if (room.startGame()) {
                             room.addSystemMessage('Trò chơi bắt đầu!');
-                            io.to(roomId).emit('gameStarted', {
+                            io.to(normalizedRoomId).emit('gameStarted', {
                                 success: true,
                                 gameState: room.getGameState()
                             });
@@ -688,8 +700,8 @@ io.on('connection', (socket) => {
                 // Thử join như spectator nếu phòng đầy
                 if (room.players.filter(p => p.connected).length >= 2) {
                     room.addSpectator(socket.id, finalPlayerName.trim());
-                    players.set(socket.id, { roomId, playerName: finalPlayerName.trim(), isHost: false, isSpectator: true });
-                    socket.join(roomId);
+                    players.set(socket.id, { roomId: normalizedRoomId, playerName: finalPlayerName.trim(), isHost: false, isSpectator: true });
+                    socket.join(normalizedRoomId);
                     
                     room.addSystemMessage(`${finalPlayerName} đã tham gia với tư cách khán giả`);
                     
@@ -699,7 +711,7 @@ io.on('connection', (socket) => {
                         gameState: room.getGameState()
                     });
                     
-                    io.to(roomId).emit('spectatorJoined', {
+                    io.to(normalizedRoomId).emit('spectatorJoined', {
                         gameState: room.getGameState()
                     });
                 } else {
@@ -935,8 +947,11 @@ io.on('connection', (socket) => {
     });
 
     // Handle get room info (for direct links)
-    socket.on('getRoomInfo', ({ roomId }) => {
+    socket.on('getRoomInfo', (data) => {
         try {
+            // Xử lý cả object và string
+            const roomId = typeof data === 'string' ? data : data?.roomId;
+            
             if (!roomId) {
                 socket.emit('roomInfo', {
                     success: false,
@@ -946,8 +961,13 @@ io.on('connection', (socket) => {
                 return;
             }
 
-            const room = rooms.get(roomId.toString().trim().toUpperCase());
+            // Normalize room ID - chuyển về uppercase và trim
+            const normalizedRoomId = roomId.toString().trim().toUpperCase();
+            console.log(`Getting room info for: ${normalizedRoomId}`);
+            
+            const room = rooms.get(normalizedRoomId);
             if (room) {
+                console.log(`Room found: ${room.id}, players: ${room.players.filter(p => p.connected).length}`);
                 socket.emit('roomInfo', {
                     success: true,
                     roomExists: true,
@@ -958,14 +978,16 @@ io.on('connection', (socket) => {
                         maxPlayers: 2,
                         gameStarted: room.gameStarted,
                         gameOver: room.gameOver,
-                        canJoin: room.players.filter(p => p.connected).length < 2 && !room.gameStarted
+                        canJoin: room.players.filter(p => p.connected).length < 2 && !room.gameStarted,
+                        hostName: room.players[0]?.name || 'Unknown'
                     }
                 });
             } else {
+                console.log(`Room not found: ${normalizedRoomId}. Available rooms:`, Array.from(rooms.keys()));
                 socket.emit('roomInfo', {
                     success: false,
                     roomExists: false,
-                    message: 'Phòng không tồn tại.'
+                    message: 'Phòng không tồn tại hoặc đã bị đóng.'
                 });
             }
         } catch (error) {
@@ -1118,7 +1140,10 @@ app.get('/api/rooms', (req, res) => {
 // Get specific room state
 app.get('/api/room/:roomId', (req, res) => {
     try {
-        const room = rooms.get(req.params.roomId);
+        // Normalize room ID
+        const roomId = req.params.roomId.trim().toUpperCase();
+        const room = rooms.get(roomId);
+        
         if (room) {
             res.json({
                 success: true,
