@@ -219,7 +219,7 @@ class GameRoom {
 
     addSpectator(socketId, spectatorName) {
         this.spectators.push({ id: socketId, name: spectatorName });
-        this.lastActivity = Date.27.07.2025();
+       this.lastActivity = Date.now();
     }
 
     startGame() {
