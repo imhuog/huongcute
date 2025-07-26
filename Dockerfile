@@ -6,24 +6,22 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies (chỉ production)
+# Install dependencies (chỉ cài dependencies cần thiết)
 RUN npm install --omit=dev
 
-# Copy toàn bộ source code vào container
+# Copy toàn bộ source code
 COPY . .
 
-# Tạo user không phải root (bảo mật hơn)
+# Tạo user không phải root để chạy an toàn
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
 RUN chown -R nextjs:nodejs /app
 USER nextjs
 
-# Expose cổng server (Render sẽ tự set PORT)
+# Expose cổng app (Render sẽ gán PORT)
 EXPOSE 3000
 
-# ✅ Sửa Healthcheck dùng đúng PORT do Render cấp
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:$PORT/api/rooms || exit 1
+# ❌ Bỏ dòng HEALTHCHECK để tránh bị kill vì endpoint fail
 
-# Start server bằng npm script
+# Start app
 CMD ["npm", "start"]
