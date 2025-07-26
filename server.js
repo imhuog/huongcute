@@ -105,7 +105,7 @@ async function saveStats() {
         await fs.writeFile(STATS_FILE, data, 'utf8');
         console.log('Game stats saved.');
     } catch (error) {
-        console.error('Error saving stats:', error);
+        console.error('Error saving game stats:', error);
     }
 }
 
@@ -153,7 +153,7 @@ function getRoomList() {
         .filter(room => room.gameMode === 'online' && room.players.length < 2 && !room.gameStarted)
         .map(room => ({
             id: room.id,
-            name: room.displayName || room.id, // Sử dụng displayName nếu có, nếu không thì dùng ID
+            name: room.id, // Mặc định hiển thị ID, có thể dùng tên người tạo nếu muốn
             players: room.players.length,
             lastActivity: room.lastActivity
         }));
@@ -161,14 +161,13 @@ function getRoomList() {
 
 // GameRoom Class (Defined inline for completeness)
 class GameRoom {
-    constructor(id, hostSocketId, hostName, mode = 'online', displayName = '') { // Thêm displayName
+    constructor(id, hostSocketId, hostName, mode = 'online') {
         this.id = id;
-        this.displayName = displayName || id; // Lưu tên phòng do người dùng nhập
         this.gameMode = mode;
         this.board = Array(8).fill(0).map(() => Array(8).fill(0));
         this.currentPlayer = 1; // 1 for Black, 2 for White
         this.players = [
-            { id: hostSocketId, name: hostName, color: 1, connected: true, isHost: true }, // Host is always black (1)
+            { id: hostSocketId, name: hostName, color: 1, connected: true }, // Host is always black (1)
         ];
         this.spectators = [];
         this.gameStarted = false;
@@ -189,10 +188,10 @@ class GameRoom {
         this.updateScores();
     }
 
-    addPlayer(socketId, playerName, isHost = false) {
+    addPlayer(socketId, playerName) {
         if (this.players.length < 2) {
-            const playerColor = this.players.length === 0 ? 1 : 2; 
-            this.players.push({ id: socketId, name: playerName, color: playerColor, connected: true, isHost: isHost });
+            const playerColor = this.players.length === 0 ? 1 : 2; // If host disconnects, first to join gets host color
+            this.players.push({ id: socketId, name: playerName, color: playerColor, connected: true });
             this.lastActivity = Date.now();
             return true;
         }
@@ -204,6 +203,7 @@ class GameRoom {
         if (playerIndex !== -1) {
             this.players[playerIndex].connected = false; // Mark as disconnected
             console.log(`Player ${this.players[playerIndex].name} disconnected from room ${this.id}`);
+            // If both players are disconnected, consider closing the room after timeout
             this.lastActivity = Date.now();
             return true;
         }
@@ -219,7 +219,7 @@ class GameRoom {
 
     addSpectator(socketId, spectatorName) {
         this.spectators.push({ id: socketId, name: spectatorName });
-       this.lastActivity = Date.now();
+        this.lastActivity = Date.now();
     }
 
     startGame() {
@@ -408,10 +408,9 @@ class GameRoom {
         const connectedPlayers = this.players.filter(p => p.connected);
         return {
             roomId: this.id,
-            roomName: this.displayName, // Sử dụng displayName để gửi về frontend
             board: this.board,
             currentPlayer: this.currentPlayer,
-            players: connectedPlayers.map(p => ({ id: p.id, name: p.name, color: p.color, connected: p.connected, isHost: p.isHost })),
+            players: connectedPlayers.map(p => ({ id: p.id, name: p.name, color: p.color, connected: p.connected })),
             spectators: this.spectators.map(s => ({ id: s.id, name: s.name })),
             gameStarted: this.gameStarted,
             gameOver: this.gameOver,
@@ -432,20 +431,23 @@ io.on('connection', (socket) => {
     // --- Room Management Events ---
 
     // Handle create room event
-    socket.on('createRoom', ({ roomName, playerName }) => { 
-        try { 
+    socket.on('createRoom', ({ roomName, playerName }) => { // Thêm roomName vào đây để có thể sử dụng (mặc dù ID vẫn ngẫu nhiên)
+        try {
+            // Check if a room with the given roomName already exists (if you want to allow custom names)
+            // For now, we always generate a unique ID
             const roomId = generateRoomId(); // Server always generates unique ID
             
-            // Pass the original roomName to the GameRoom for display
-            const room = new GameRoom(roomId, socket.id, playerName, 'online', roomName); 
+            // Pass the original roomName to the GameRoom if you want to store it
+            // Otherwise, roomName will be same as roomId in GameRoom
+            const room = new GameRoom(roomId, socket.id, playerName, 'online'); 
             rooms.set(roomId, room);
             players.set(socket.id, { roomId, playerName, isHost: true }); // Lưu isHost
             socket.join(roomId);
-            console.log(`Room created: ${roomId} (display: ${room.displayName}) by ${playerName}`);
+            console.log(`Room created: ${roomId} by ${playerName}`);
             
             socket.emit('roomCreated', { 
                 roomId: roomId, 
-                roomName: room.displayName, // Gửi lại displayName của phòng
+                roomName: roomName || roomId, // Gửi lại roomName do người dùng nhập hoặc ID nếu không có
                 isHost: true,
                 ...room.getGameState() // Bao gồm toàn bộ trạng thái game
             }); 
@@ -470,7 +472,7 @@ io.on('connection', (socket) => {
                 return;
             }
 
-            room.addPlayer(socket.id, playerName, false); // Not host
+            room.addPlayer(socket.id, playerName);
             players.set(socket.id, { roomId, playerName, isHost: false });
             socket.join(roomId);
             console.log(`Player ${playerName} joined room: ${roomId}`);
@@ -629,7 +631,7 @@ app.get('/api/rooms', (req, res) => {
         .filter(room => room.gameMode === 'online' && room.players.length < 2 && !room.gameStarted)
         .map(room => ({
             id: room.id,
-            name: room.displayName, // Đảm bảo dùng displayName
+            name: room.id, // Or room.name if you store it
             players: room.players.filter(p => p.connected).length,
             lastActivity: room.lastActivity
         }));
